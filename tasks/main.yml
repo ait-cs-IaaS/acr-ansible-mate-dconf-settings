@@ -1,0 +1,14 @@
+---
+- name: Init dconf
+  ansible.builtin.include_tasks:
+    file: _init.yml
+
+- name: Apply custom dconf settings
+  become: true
+  become_user: '{{ customize_user }}'
+  ansible.builtin.shell:
+    cmd: dbus-launch dconf load /
+    stdin: '{{ client_dconf_settings | to_dconf_config }}'
+  environment:
+    DISPLAY: ':0'
+  changed_when: true

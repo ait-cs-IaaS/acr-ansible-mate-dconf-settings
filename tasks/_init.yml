@@ -1,0 +1,33 @@
+---
+- name: Set customize_user
+  when: customize_user is not defined
+  block:
+    - name: Get currently installed username
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          cut -d: -f1,3 /etc/passwd | egrep ':[0-9]{4}$' | cut -d: -f1
+      args:
+        executable: /bin/bash
+      register: _customize_user
+      changed_when: false
+
+    - name: Set user to be used for customization
+      ansible.builtin.set_fact:
+        customize_user: '{{ _customize_user.stdout }}'
+
+- name: Install util applications
+  become: true
+  ansible.builtin.apt:
+    name:
+      - dconf-editor
+      - dbus
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Set dconf profile
+  become: true
+  become_user: '{{ customize_user }}'
+  ansible.builtin.copy:
+    dest: /home/{{ customize_user }}/profile
+    content: user-db:user
